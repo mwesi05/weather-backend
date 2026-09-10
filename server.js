@@ -46,14 +46,17 @@ function sendJson(response, status, payload) {
 
 async function getWeather(city) {
   // Added standard User-Agent headers because cloud networks often block anonymous API queries
-  const locationResponse = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`,
-    { headers: { 'User-Agent': 'AtmosWeatherApp/1.0' } }
-  );
-  if (!locationResponse.ok) throw new Error('Location service is unavailable.');
+    const forecastUrl = new URL('https://api.open-meteo.com/v1/forecast');
+  forecastUrl.search = new URLSearchParams({
+    latitude: String(location.latitude),   // <-- Converted explicitly to String
+    longitude: String(location.longitude), // <-- Converted explicitly to String
+    current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m',
+    hourly: 'temperature_2m,precipitation_probability,weather_code',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset',
+    forecast_days: '7',
+    timezone: 'auto'
+  });
 
-  const locationData = await locationResponse.json();
-  const location = locationData.results?.[0];
   if (!location) return null;
 
   const forecastUrl = new URL('https://api.open-meteo.com/v1/forecast');
