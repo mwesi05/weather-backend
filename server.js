@@ -1,11 +1,15 @@
-import fetch from 'node:fetch'; // This guarantees fetch is available on all environments
 import http from 'node:http';
-import { URL } from 'node:url';
-import http from 'node:http';
-import { URL } from 'node:url';
+import { URL, URLSearchParams } from 'node:url';
+
+// Fetch is natively built into Node 18+. If Render falls back to Node 16 or older, 
+// this block safely injects a fetch polyfill so your code never breaks.
+if (!globalThis.fetch) {
+  const { default: nativeFetch } = await import('node-fetch');
+  globalThis.fetch = nativeFetch;
+}
 
 const PORT = Number(process.env.PORT) || 4000;
-const HOST = process.env.HOST || '0.0.0.0'; // <-- Changed to '0.0.0.0' for Render compatibility
+const HOST = process.env.HOST || '0.0.0.0'; 
 
 const WEATHER_CODES = {
   0: ['Clear sky', 'clear'],
@@ -41,7 +45,11 @@ function sendJson(response, status, payload) {
 }
 
 async function getWeather(city) {
-  const locationResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+  // Added standard User-Agent headers because cloud networks often block anonymous API queries
+  const locationResponse = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`,
+    { headers: { 'User-Agent': 'AtmosWeatherApp/1.0' } }
+  );
   if (!locationResponse.ok) throw new Error('Location service is unavailable.');
 
   const locationData = await locationResponse.json();
@@ -59,7 +67,9 @@ async function getWeather(city) {
     timezone: 'auto'
   });
 
-  const forecastResponse = await fetch(forecastUrl);
+  const forecastResponse = await fetch(forecastUrl, {
+    headers: { 'User-Agent': 'AtmosWeatherApp/1.0' }
+  });
   if (!forecastResponse.ok) throw new Error('Forecast service is unavailable.');
   const forecast = await forecastResponse.json();
 
@@ -112,7 +122,8 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, weather);
     } catch (error) {
       console.error(error);
-      sendJson(response, 502, { error: 'Weather data is temporarily unavailable. Try again shortly.' });
+      // Expose the raw error message to the browser window so you can read exactly what failed
+      sendJson(response, 502, { error: `Backend fetch fail: ${error.message}` });
     }
     return;
   }
