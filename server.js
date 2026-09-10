@@ -1,3 +1,6 @@
+import fetch from 'node:fetch'; // This guarantees fetch is available on all environments
+import http from 'node:http';
+import { URL } from 'node:url';
 import http from 'node:http';
 import { URL } from 'node:url';
 
