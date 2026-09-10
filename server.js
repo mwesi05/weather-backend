@@ -2,7 +2,8 @@ import http from 'node:http';
 import { URL } from 'node:url';
 
 const PORT = Number(process.env.PORT) || 4000;
-const HOST = process.env.HOST || 'localhost';
+const HOST = process.env.HOST || '0.0.0.0'; // <-- Changed to '0.0.0.0' for Render compatibility
+
 const WEATHER_CODES = {
   0: ['Clear sky', 'clear'],
   1: ['Mainly clear', 'clear'],
